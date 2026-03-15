@@ -1,4 +1,4 @@
-import { Button, Input, InputNumber, Segmented, Table } from 'antd'
+import {Button, Input, InputNumber, Segmented, Table, Tooltip} from 'antd'
 import type { TableColumnsType } from 'antd'
 import { DeleteOutlined } from '@ant-design/icons'
 import styles from './CombatantsTable.module.scss'
@@ -51,13 +51,15 @@ export const CombatantsTable = () => {
       dataIndex: 'initiative',
       width: 110,
       render: (value: number, record) => (
-        <InputNumber
-          size="small"
-          value={value}
-          step={0.01}
-          style={{ width: '100%' }}
-          onChange={(nextValue) => updateCombatant(record.id, { initiative: Number(nextValue ?? 0) })}
-        />
+        <Tooltip title={`${value}.${record.initiativeModifier}`}>
+          <InputNumber
+              size="small"
+              value={value}
+              step={0.01}
+              style={{ width: '100%' }}
+              onChange={(nextValue) => updateCombatant(record.id, { initiative: Number(nextValue ?? 0) })}
+          />
+        </Tooltip>
       ),
     },
     {
@@ -101,24 +103,6 @@ export const CombatantsTable = () => {
           />
         )
       },
-    },
-    {
-      title: 'Init mod',
-      dataIndex: 'initiativeModifier',
-      width: 120,
-      render: (value: number, record) => (
-        <InputNumber
-          size="small"
-          value={value}
-          min={-10}
-          step={1}
-          max={20}
-          style={{ width: '100%' }}
-          onChange={(nextValue) =>
-            updateCombatant(record.id, { initiativeModifier: Number(nextValue ?? 0) })
-          }
-        />
-      ),
     },
     {
       title: '',

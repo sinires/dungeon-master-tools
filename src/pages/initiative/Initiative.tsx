@@ -68,7 +68,10 @@ export const InitiativePage = () => {
             Next Turn
           </Button>
           <Space>
-            <Button type="primary" danger onClick={rollMonsterInitiative} disabled={monstersCount === 0}>
+            <Button type="primary" danger onClick={() => {
+              rollMonsterInitiative()
+              resetBattle()
+            }} disabled={monstersCount === 0}>
               Roll All Monsters
             </Button>
             <Button onClick={resetBattle} disabled={combatantsCount === 0}>

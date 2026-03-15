@@ -10,16 +10,13 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const toFiniteNumber = (value: unknown, fallback: number): number =>
   typeof value === 'number' && Number.isFinite(value) ? value : fallback
 
-const toRounded = (value: number): number => Math.round(value * 100) / 100
-
 export const isCombatantType = (value: unknown): value is CombatantType =>
   value === 'player' || value === 'monster'
 
-export const getInitiativeFromModifier = (initiativeModifier: number): number =>
-  toRounded(initiativeModifier + initiativeModifier / 100)
+export const getInitiativeFromModifier = (initiativeModifier: number): number => initiativeModifier
 
 export const getRolledInitiative = (roll: number, initiativeModifier: number): number =>
-  toRounded(roll + initiativeModifier + initiativeModifier / 100)
+  roll + initiativeModifier
 
 export const shouldHidePlayerStats = (combatant: Combatant): boolean =>
   combatant.type === 'player' && combatant.hp === 0 && combatant.ac === 0
@@ -83,6 +80,10 @@ export const sortCombatants = (combatants: Combatant[]) => {
   combatants.sort((first, second) => {
     if (second.initiative !== first.initiative) {
       return second.initiative - first.initiative
+    }
+
+    if (second.initiativeModifier !== first.initiativeModifier) {
+      return second.initiativeModifier - first.initiativeModifier
     }
 
     return first.name.localeCompare(second.name, 'en')

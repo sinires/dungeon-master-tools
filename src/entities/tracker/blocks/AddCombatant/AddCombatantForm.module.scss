@@ -1,0 +1,23 @@
+.nameInput {
+  width: min(320px, 100%);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label {
+  color: #475569;
+  font-size: 12px;
+  line-height: 1.1;
+}
+
+.numberInput {
+  width: 120px;
+}
+
+.addButton {
+  min-width: 88px;
+}

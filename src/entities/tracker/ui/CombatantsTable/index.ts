@@ -1,0 +1,1 @@
+export { CombatantsTable } from './CombatantsTable'

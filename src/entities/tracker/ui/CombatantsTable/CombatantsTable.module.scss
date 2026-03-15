@@ -1,0 +1,7 @@
+.currentTurnRow :global(td) {
+  background: #fff7e6 !important;
+}
+
+.currentTurnRow :global(td:first-child) {
+  box-shadow: inset 3px 0 0 #faad14;
+}

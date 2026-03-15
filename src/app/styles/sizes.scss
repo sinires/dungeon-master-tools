@@ -1,0 +1,102 @@
+@use 'sass:map';
+@use 'sass:math';
+
+$space-base: 8px !default; // базовый шаг (8px-сетка)
+$space-density: 1 !default; // 1 = обычный, 0.875 = плотный, 1.25 = расслабленный
+
+$space-scale: (
+  0: 0,
+  // 0
+  1: 0.25,
+  // 2
+  2: 0.5,
+  // 4
+  3: 1,
+  // 8
+  4: 1.5,
+  // 12
+  5: 2,
+  // 16
+  6: 2.5,
+  // 20
+  7: 3,
+  // 24
+  8: 3.5,
+  // 28
+  9: 4,
+  // 32
+  10: 4.5,
+  // 36
+  11: 5,
+  // 40
+  12: 5.5,
+  // 44
+  13: 6, // 48
+) !default;
+
+// 3) Функция доступа: space(3) → 8px, space(9) → 32px и т.д.
+@function space($key, $multiplier: 1) {
+  $ratio: map.get($space-scale, $key);
+
+  @if $ratio == null {
+    @error "Unknown space key `#{$key}`. Available: #{map.keys($space-scale)}";
+  }
+
+  @return ($space-base * $space-density * $ratio * $multiplier);
+}
+
+// 4) Экспорт в CSS variables (для runtime-использования и JS/AntD)
+:root {
+  // базовые значения
+  --space-base: #{$space-base};
+  --space-density: #{$space-density};
+
+  // дискретная линейка: --space-0 … --space-13
+  @each $k, $ratio in $space-scale {
+    --space-#{$k}: #{space($k)};
+  }
+
+  // семантические алиасы
+  --space-xxs: #{space(1)};
+  --space-xs: #{space(2)};
+  --space-sm: #{space(3)};
+  --space-md: #{space(5)};
+  --space-lg: #{space(7)};
+  --space-xl: #{space(9)};
+  --space-2xl: #{space(11)};
+  --space-3xl: #{space(13)};
+
+  // пример «флюидного» шага (между 6px и 12px)
+  --space-fluid: clamp(6px, 1vw, 12px);
+}
+
+// 5) Утилиты (по желанию). Можно сгенерить только те, что нужны проекту.
+@mixin m($t: null, $r: null, $b: null, $l: null) {
+  @if $t != null {
+    margin-top: space($t);
+  }
+  @if $r != null {
+    margin-right: space($r);
+  }
+  @if $b != null {
+    margin-bottom: space($b);
+  }
+  @if $l != null {
+    margin-left: space($l);
+  }
+}
+
+@mixin p($t: null, $r: null, $b: null, $l: null) {
+  @if $t != null {
+    padding-top: space($t);
+  }
+  @if $r != null {
+    padding-right: space($r);
+  }
+  @if $b != null {
+    padding-bottom: space($b);
+  }
+  @if $l != null {
+    padding-left: space($l);
+  }
+}

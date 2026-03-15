@@ -1,0 +1,18 @@
+@use '../styles/sizes' as sizes;
+
+.layout {
+  min-height: 100vh;
+  background: #eef2ff;
+}
+
+.content {
+  padding: sizes.space(8) sizes.space(5);
+  max-width: 1400px;
+  margin: auto;
+}
+
+@media (max-width: 768px) {
+  .content {
+    padding: sizes.space(5) sizes.space(4);
+  }
+}

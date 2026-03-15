@@ -50,23 +50,15 @@ export const CombatantsTable = () => {
       title: 'Initiative',
       dataIndex: 'initiative',
       width: 110,
-      render: (value: number, record) => {
-        if (record.type === 'player') {
-          return (
-            <InputNumber
-              size="small"
-              value={value}
-              step={1}
-              style={{ width: '100%' }}
-              onChange={(nextValue) =>
-                updateCombatant(record.id, { initiative: Number(nextValue ?? 0) })
-              }
-            />
-          )
-        }
-
-        return value.toFixed(2)
-      },
+      render: (value: number, record) => (
+        <InputNumber
+          size="small"
+          value={value}
+          step={0.01}
+          style={{ width: '100%' }}
+          onChange={(nextValue) => updateCombatant(record.id, { initiative: Number(nextValue ?? 0) })}
+        />
+      ),
     },
     {
       title: 'HP',

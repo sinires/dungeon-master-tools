@@ -72,10 +72,6 @@ export const useTrackerStore = create<TrackerState>()(
 
           if (patch.initiativeModifier !== undefined && Number.isFinite(patch.initiativeModifier)) {
             combatant.initiativeModifier = patch.initiativeModifier
-
-            if (patch.initiative === undefined) {
-              combatant.initiative = getInitiativeFromModifier(patch.initiativeModifier)
-            }
           }
 
           if (patch.hp !== undefined && Number.isFinite(patch.hp)) {

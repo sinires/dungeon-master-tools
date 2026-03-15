@@ -44,26 +44,25 @@ export const InitiativePage = () => {
       <Flex vertical gap={ESpacer.SPACER3}>
         <Title level={2}>Initiative Tracker</Title>
         <AddCombatantForm />
-        <Flex wrap gap={ESpacer.SPACER3}>
-          <TurnControls />
-        </Flex>
-        <Paragraph>
-          Current turn: <Text strong>{currentTurn?.name ?? 'not selected'}</Text>
-          {currentTurn ? (
-            <>
-              {' | '}Initiative: <Text strong>{currentTurn.initiative}</Text>
-              {!shouldHidePlayerStats(currentTurn) ? (
+        <Flex justify='space-between' gap={ESpacer.SPACER3}>
+          <Paragraph>
+            Current turn: <Text strong>{currentTurn?.name ?? 'not selected'}</Text>
+            {currentTurn ? (
                 <>
-                  {' | '}HP: <Text strong>{currentTurn.hp}</Text>
-                  {' | '}AC: <Text strong>{currentTurn.ac}</Text>
+                  {' | '}Initiative: <Text strong>{currentTurn.initiative}</Text>
+                  {!shouldHidePlayerStats(currentTurn) ? (
+                      <>
+                        {' | '}HP: <Text strong>{currentTurn.hp}</Text>
+                        {' | '}AC: <Text strong>{currentTurn.ac}</Text>
+                      </>
+                  ) : null}
                 </>
-              ) : null}
-            </>
-          ) : null}
-        </Paragraph>
-        <Paragraph>
-          Round: <Text strong>{battleRound === 0 ? 'not started' : battleRound}</Text>
-        </Paragraph>
+            ) : null}
+          </Paragraph>
+          <Paragraph>
+            Round: <Text strong>{battleRound === 0 ? 'not started' : battleRound}</Text>
+          </Paragraph>
+        </Flex>
         <Flex justify='space-between' gap={ESpacer.SPACER2}>
           <Button type="primary" onClick={nextTurn} disabled={combatantsCount === 0}>
             Next Turn
@@ -78,7 +77,10 @@ export const InitiativePage = () => {
           </Space>
         </Flex>
         <CombatantsTable />
-        <SnapshotTransferControls />
+        <Flex justify='space-between' gap={ESpacer.SPACER3}>
+          <SnapshotTransferControls />
+          <TurnControls />
+        </Flex>
         <UsageInstructionsAlert />
       </Flex>
     </Card>

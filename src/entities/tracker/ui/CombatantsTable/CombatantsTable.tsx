@@ -51,11 +51,11 @@ export const CombatantsTable = () => {
       dataIndex: 'initiative',
       width: 110,
       render: (value: number, record) => (
-        <Tooltip title={`${value}.${record.initiativeModifier}`}>
+        <Tooltip title={`${value} (IM: ${record.initiativeModifier})`}>
           <InputNumber
               size="small"
               value={value}
-              step={0.01}
+              step={1}
               style={{ width: '100%' }}
               onChange={(nextValue) => updateCombatant(record.id, { initiative: Number(nextValue ?? 0) })}
           />

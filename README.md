@@ -1,11 +1,4 @@
-# d-master-tools
-
-Starter frontend project with:
-
-- React + TypeScript
-- Ant Design
-- Zustand + Immer
-- SCSS Modules
+# dm-tools
 
 ## Commands
 

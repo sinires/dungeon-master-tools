@@ -55,6 +55,7 @@ export const AddCombatantForm = () => {
         <Text className={styles.label}>Initiative mod</Text>
         <InputNumber
           value={initiativeModifier}
+          step={1}
           min={-10}
           max={20}
           className={styles.numberInput}
@@ -65,6 +66,7 @@ export const AddCombatantForm = () => {
         <Text className={styles.label}>HP</Text>
         <InputNumber
           value={hp}
+          step={1}
           min={0}
           className={styles.numberInput}
           onChange={(nextValue) => setHp(Number(nextValue ?? 0))}
@@ -74,6 +76,7 @@ export const AddCombatantForm = () => {
         <Text className={styles.label}>AC</Text>
         <InputNumber
           value={ac}
+          step={1}
           min={0}
           max={99}
           className={styles.numberInput}

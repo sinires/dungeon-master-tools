@@ -56,7 +56,7 @@ export const CombatantsTable = () => {
             <InputNumber
               size="small"
               value={value}
-              step={0.01}
+              step={1}
               style={{ width: '100%' }}
               onChange={(nextValue) =>
                 updateCombatant(record.id, { initiative: Number(nextValue ?? 0) })
@@ -82,6 +82,7 @@ export const CombatantsTable = () => {
             size="small"
             value={value}
             min={0}
+            step={1}
             style={{ width: '100%' }}
             onChange={(nextValue) => updateCombatant(record.id, { hp: Number(nextValue ?? 0) })}
           />
@@ -102,6 +103,7 @@ export const CombatantsTable = () => {
             size="small"
             value={value}
             min={0}
+            step={1}
             style={{ width: '100%' }}
             onChange={(nextValue) => updateCombatant(record.id, { ac: Number(nextValue ?? 0) })}
           />
@@ -117,6 +119,7 @@ export const CombatantsTable = () => {
           size="small"
           value={value}
           min={-10}
+          step={1}
           max={20}
           style={{ width: '100%' }}
           onChange={(nextValue) =>

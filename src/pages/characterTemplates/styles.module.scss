@@ -1,0 +1,21 @@
+.nameInput {
+  width: min(320px, 100%);
+}
+
+.form {
+  width: 100%;
+}
+
+.numberInput {
+  width: 120px;
+}
+
+.notesInput {
+  width: min(720px, 100%);
+}
+
+.expandedInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}

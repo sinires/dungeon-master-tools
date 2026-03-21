@@ -1,10 +1,11 @@
-import {Button, Input, InputNumber, Segmented, Table, Tooltip} from 'antd'
+import { Button, Input, InputNumber, Table, Tooltip } from 'antd'
 import type { TableColumnsType } from 'antd'
 import { DeleteOutlined } from '@ant-design/icons'
-import styles from './CombatantsTable.module.scss'
-import type { Combatant, CombatantType } from '../../types'
+import styles from './styles.module.scss'
+import type { Combatant, NumericPatchKey } from '../../types'
 import { useTrackerStore } from '../../store'
-import { shouldHidePlayerStats } from '../../utils'
+import { shouldHidePlayerStats, hasAdditionalCombatantInfo } from '../../utils'
+import { CombatantExpandedInfo } from './CombatantExpandedInfo'
 
 export const CombatantsTable = () => {
   const combatants = useTrackerStore((state) => state.combatants)
@@ -12,28 +13,16 @@ export const CombatantsTable = () => {
   const updateCombatant = useTrackerStore((state) => state.updateCombatant)
   const removeCombatant = useTrackerStore((state) => state.removeCombatant)
 
+  const updateNumericField = (id: string, key: NumericPatchKey, value: number | null) => {
+    updateCombatant(id, { [key]: Number(value ?? 0) } as Pick<Combatant, NumericPatchKey>)
+  }
+
   const columns: TableColumnsType<Combatant> = [
     {
       title: '#',
       key: 'position',
       width: 56,
       render: (_, __, index) => index + 1,
-    },
-    {
-      title: 'Type',
-      dataIndex: 'type',
-      width: 140,
-      render: (value: CombatantType, record) => (
-        <Segmented<CombatantType>
-          size="small"
-          value={value}
-          options={[
-            { label: 'Player', value: 'player' },
-            { label: 'Monster', value: 'monster' },
-          ]}
-          onChange={(nextType) => updateCombatant(record.id, { type: nextType })}
-        />
-      ),
     },
     {
       title: 'Name',
@@ -53,11 +42,10 @@ export const CombatantsTable = () => {
       render: (value: number, record) => (
         <Tooltip title={`${value} (IM: ${record.initiativeModifier})`}>
           <InputNumber
-              size="small"
-              value={value}
-              step={1}
-              style={{ width: '100%' }}
-              onChange={(nextValue) => updateCombatant(record.id, { initiative: Number(nextValue ?? 0) })}
+            size="small"
+            value={value}
+            step={1}
+            onChange={(nextValue) => updateNumericField(record.id, 'initiative', nextValue)}
           />
         </Tooltip>
       ),
@@ -67,19 +55,16 @@ export const CombatantsTable = () => {
       dataIndex: 'hp',
       width: 100,
       render: (value: number, record) => {
-        if (shouldHidePlayerStats(record)) {
-          return null
-        }
-
         return (
-          <InputNumber
-            size="small"
-            value={value}
-            min={0}
-            step={1}
-            style={{ width: '100%' }}
-            onChange={(nextValue) => updateCombatant(record.id, { hp: Number(nextValue ?? 0) })}
-          />
+          !shouldHidePlayerStats(record) && (
+            <InputNumber
+              size="small"
+              value={value}
+              min={0}
+              step={1}
+              onChange={(nextValue) => updateNumericField(record.id, 'hp', nextValue)}
+            />
+          )
         )
       },
     },
@@ -88,19 +73,16 @@ export const CombatantsTable = () => {
       dataIndex: 'ac',
       width: 100,
       render: (value: number, record) => {
-        if (shouldHidePlayerStats(record)) {
-          return null
-        }
-
         return (
-          <InputNumber
-            size="small"
-            value={value}
-            min={0}
-            step={1}
-            style={{ width: '100%' }}
-            onChange={(nextValue) => updateCombatant(record.id, { ac: Number(nextValue ?? 0) })}
-          />
+          !shouldHidePlayerStats(record) && (
+            <InputNumber
+              size="small"
+              value={value}
+              min={0}
+              step={1}
+              onChange={(nextValue) => updateNumericField(record.id, 'ac', nextValue)}
+            />
+          )
         )
       },
     },
@@ -126,6 +108,10 @@ export const CombatantsTable = () => {
       pagination={false}
       columns={columns}
       dataSource={combatants}
+      expandable={{
+        rowExpandable: hasAdditionalCombatantInfo,
+        expandedRowRender: (record) => <CombatantExpandedInfo combatant={record} />,
+      }}
       rowClassName={(record) => (record.id === currentTurnId ? styles.currentTurnRow : '')}
       locale={{ emptyText: 'Add combatants to start tracking turns.' }}
     />

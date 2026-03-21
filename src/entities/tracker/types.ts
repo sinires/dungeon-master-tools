@@ -1,6 +1,14 @@
 export type CombatantType = 'player' | 'monster'
 
-export interface Combatant {
+export interface CharacterAdditionalInfo {
+  notes: string
+  cr: string
+  xp: number | null
+  attackModifier: number | null
+  damageDice: string
+}
+
+export interface Combatant extends CharacterAdditionalInfo {
   id: string
   name: string
   initiativeModifier: number
@@ -10,13 +18,30 @@ export interface Combatant {
   type: CombatantType
 }
 
+export interface CharacterTemplate extends CharacterAdditionalInfo {
+  id: string
+  name: string
+  initiativeModifier: number
+  hp: number
+  ac: number
+}
+
+export interface CreateCharacterTemplatePayload extends CharacterAdditionalInfo {
+  name: string
+  initiativeModifier: number
+  hp: number
+  ac: number
+}
+
 export interface TrackerSnapshot {
   combatants: Combatant[]
   currentTurnId: string | null
   round: number
+  playerCharacters: CharacterTemplate[]
+  monsterCharacters: CharacterTemplate[]
 }
 
-export interface CreateCombatantPayload {
+export interface CreateCombatantPayload extends CharacterAdditionalInfo {
   name: string
   initiativeModifier: number
   hp: number
@@ -27,9 +52,18 @@ export interface CreateCombatantPayload {
 export type ImportResult = { ok: true } | { ok: false; error: string }
 
 export interface TrackerState extends TrackerSnapshot {
+  playerCharacters: CharacterTemplate[]
+  monsterCharacters: CharacterTemplate[]
   addCombatant: (payload: CreateCombatantPayload) => void
   updateCombatant: (id: string, patch: Partial<Omit<Combatant, 'id'>>) => void
   removeCombatant: (id: string) => void
+  addCharacterTemplate: (type: CombatantType, payload: CreateCharacterTemplatePayload) => void
+  updateCharacterTemplate: (
+    type: CombatantType,
+    id: string,
+    patch: Partial<Omit<CharacterTemplate, 'id'>>,
+  ) => void
+  removeCharacterTemplate: (type: CombatantType, id: string) => void
   rollInitiative: () => void
   rollMonsterInitiative: () => void
   sortByInitiative: () => void
@@ -39,3 +73,27 @@ export interface TrackerState extends TrackerSnapshot {
   exportSnapshot: () => TrackerSnapshot
   importSnapshot: (payload: unknown) => ImportResult
 }
+
+export type NumericPatchKey = 'initiative' | 'hp' | 'ac'
+
+export interface DetailRow {
+  key: string
+  label: string
+  value: string | number
+}
+
+export interface CurrentTurnDetail {
+  key: string
+  label: string
+  value: string | number
+}
+
+
+export interface AddCombatantFormValues {
+  type: Combatant['type']
+  name: string
+  initiativeModifier: number
+  hp: number
+  ac: number
+}
+

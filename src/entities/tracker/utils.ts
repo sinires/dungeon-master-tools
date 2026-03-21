@@ -1,14 +1,44 @@
-import type { Combatant, CombatantType, TrackerSnapshot } from './types'
-
-const DEFAULT_HP = 1
-const DEFAULT_AC = 10
-const TRAILING_INDEX_PATTERN = /^(.*?)(?:\s+(\d+))?$/
+import type {
+  CharacterTemplate,
+  Combatant,
+  CombatantType,
+  CurrentTurnDetail,
+  TrackerSnapshot,
+} from './types'
+import {
+  DEFAULT_AC,
+  DEFAULT_CR,
+  DEFAULT_DAMAGE_DICE,
+  DEFAULT_HP,
+  DEFAULT_NOTES,
+  DEFAULT_TEMPLATE_AC,
+  DEFAULT_TEMPLATE_HP,
+  TRAILING_INDEX_PATTERN,
+} from '@entities/tracker/constants.ts'
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value)
 
 const toFiniteNumber = (value: unknown, fallback: number): number =>
   typeof value === 'number' && Number.isFinite(value) ? value : fallback
+
+const toNullableFiniteNumber = (value: unknown): number | null =>
+  typeof value === 'number' && Number.isFinite(value) ? value : null
+
+const toNormalizedText = (value: unknown, fallback = ''): string =>
+  typeof value === 'string' ? value.trim() : fallback
+
+const toNormalizedXp = (value: unknown): number | null => {
+  const normalized = toNullableFiniteNumber(value)
+
+  return normalized === null ? null : Math.max(0, Math.floor(normalized))
+}
+
+const toNormalizedAttackModifier = (value: unknown): number | null => {
+  const normalized = toNullableFiniteNumber(value)
+
+  return normalized === null ? null : Math.trunc(normalized)
+}
 
 export const isCombatantType = (value: unknown): value is CombatantType =>
   value === 'player' || value === 'monster'
@@ -21,6 +51,8 @@ export const getRolledInitiative = (roll: number, initiativeModifier: number): n
 export const shouldHidePlayerStats = (combatant: Combatant): boolean =>
   combatant.type === 'player' && combatant.hp === 0 && combatant.ac === 0
 
+export const formatSignedModifier = (value: number): string =>
+  value >= 0 ? `+${value}` : `${value}`
 const getNameParts = (rawName: string): { baseName: string; index: number | null } => {
   const normalizedName = rawName.trim()
   const matched = normalizedName.match(TRAILING_INDEX_PATTERN)
@@ -98,6 +130,23 @@ export const getValidCurrentTurnId = (
     ? currentTurnId
     : (combatants[0]?.id ?? null)
 
+const sortCharacterTemplates = (templates: CharacterTemplate[]) => {
+  templates.sort((first, second) => first.name.localeCompare(second.name, 'en'))
+}
+
+const normalizeCharacterTemplate = (template: CharacterTemplate): CharacterTemplate => ({
+  ...template,
+  name: template.name.trim(),
+  initiativeModifier: toFiniteNumber(template.initiativeModifier, 0),
+  hp: Math.max(0, Math.floor(toFiniteNumber(template.hp, DEFAULT_TEMPLATE_HP))),
+  ac: Math.max(0, Math.floor(toFiniteNumber(template.ac, DEFAULT_TEMPLATE_AC))),
+  notes: toNormalizedText(template.notes, DEFAULT_NOTES),
+  cr: toNormalizedText(template.cr, DEFAULT_CR),
+  xp: toNormalizedXp(template.xp),
+  attackModifier: toNormalizedAttackModifier(template.attackModifier),
+  damageDice: toNormalizedText(template.damageDice, DEFAULT_DAMAGE_DICE),
+})
+
 export const normalizeSnapshot = (snapshot: TrackerSnapshot): TrackerSnapshot => {
   const combatants = snapshot.combatants
     .map((combatant) => ({
@@ -110,9 +159,23 @@ export const normalizeSnapshot = (snapshot: TrackerSnapshot): TrackerSnapshot =>
       ),
       hp: Math.max(0, Math.floor(toFiniteNumber(combatant.hp, DEFAULT_HP))),
       ac: Math.max(0, Math.floor(toFiniteNumber(combatant.ac, DEFAULT_AC))),
+      notes: toNormalizedText(combatant.notes, DEFAULT_NOTES),
+      cr: toNormalizedText(combatant.cr, DEFAULT_CR),
+      xp: toNormalizedXp(combatant.xp),
+      attackModifier: toNormalizedAttackModifier(combatant.attackModifier),
+      damageDice: toNormalizedText(combatant.damageDice, DEFAULT_DAMAGE_DICE),
     }))
     .filter((combatant) => combatant.name.length > 0)
 
+  const playerCharacters = snapshot.playerCharacters
+    .map(normalizeCharacterTemplate)
+    .filter((character) => character.name.length > 0)
+  const monsterCharacters = snapshot.monsterCharacters
+    .map(normalizeCharacterTemplate)
+    .filter((character) => character.name.length > 0)
+
+  sortCharacterTemplates(playerCharacters)
+  sortCharacterTemplates(monsterCharacters)
   sortCombatants(combatants)
 
   const round =
@@ -122,6 +185,8 @@ export const normalizeSnapshot = (snapshot: TrackerSnapshot): TrackerSnapshot =>
     combatants,
     currentTurnId: getValidCurrentTurnId(combatants, snapshot.currentTurnId),
     round,
+    playerCharacters,
+    monsterCharacters,
   }
 }
 
@@ -153,11 +218,19 @@ export const parseImportedSnapshot = (payload: unknown): TrackerSnapshot | null 
 
   const currentTurnId = payload.currentTurnId
   const round = payload.round
+  const rawPlayerCharacters = payload.playerCharacters
+  const rawMonsterCharacters = payload.monsterCharacters
 
   if (currentTurnId !== null && currentTurnId !== undefined && typeof currentTurnId !== 'string') {
     return null
   }
   if (round !== null && round !== undefined && typeof round !== 'number') {
+    return null
+  }
+  if (rawPlayerCharacters !== undefined && !Array.isArray(rawPlayerCharacters)) {
+    return null
+  }
+  if (rawMonsterCharacters !== undefined && !Array.isArray(rawMonsterCharacters)) {
     return null
   }
 
@@ -168,7 +241,20 @@ export const parseImportedSnapshot = (payload: unknown): TrackerSnapshot | null 
       return null
     }
 
-    const { id, name, initiative, initiativeModifier, hp, ac, type } = rawCombatant
+    const {
+      id,
+      name,
+      initiative,
+      initiativeModifier,
+      hp,
+      ac,
+      type,
+      notes,
+      cr,
+      xp,
+      attackModifier,
+      damageDice,
+    } = rawCombatant
 
     if (typeof id !== 'string' || typeof name !== 'string' || !isCombatantType(type)) {
       return null
@@ -184,12 +270,134 @@ export const parseImportedSnapshot = (payload: unknown): TrackerSnapshot | null 
       hp: Math.max(0, Math.floor(toFiniteNumber(hp, DEFAULT_HP))),
       ac: Math.max(0, Math.floor(toFiniteNumber(ac, DEFAULT_AC))),
       type,
+      notes: toNormalizedText(notes, DEFAULT_NOTES),
+      cr: toNormalizedText(cr, DEFAULT_CR),
+      xp: toNormalizedXp(xp),
+      attackModifier: toNormalizedAttackModifier(attackModifier),
+      damageDice: toNormalizedText(damageDice, DEFAULT_DAMAGE_DICE),
     })
+  }
+
+  const parseCharacterTemplates = (rawTemplates: unknown): CharacterTemplate[] | null => {
+    if (rawTemplates === undefined) {
+      return []
+    }
+
+    if (!Array.isArray(rawTemplates)) {
+      return null
+    }
+
+    const templates: CharacterTemplate[] = []
+
+    for (const rawTemplate of rawTemplates) {
+      if (!isRecord(rawTemplate)) {
+        return null
+      }
+
+      const { id, name, initiativeModifier, hp, ac, notes, cr, xp, attackModifier, damageDice } =
+        rawTemplate
+
+      if (typeof id !== 'string' || typeof name !== 'string') {
+        return null
+      }
+
+      templates.push({
+        id,
+        name,
+        initiativeModifier: toFiniteNumber(initiativeModifier, 0),
+        hp: Math.max(0, Math.floor(toFiniteNumber(hp, DEFAULT_TEMPLATE_HP))),
+        ac: Math.max(0, Math.floor(toFiniteNumber(ac, DEFAULT_TEMPLATE_AC))),
+        notes: toNormalizedText(notes, DEFAULT_NOTES),
+        cr: toNormalizedText(cr, DEFAULT_CR),
+        xp: toNormalizedXp(xp),
+        attackModifier: toNormalizedAttackModifier(attackModifier),
+        damageDice: toNormalizedText(damageDice, DEFAULT_DAMAGE_DICE),
+      })
+    }
+
+    return templates
+  }
+
+  const playerCharacters = parseCharacterTemplates(rawPlayerCharacters)
+  if (!playerCharacters) {
+    return null
+  }
+
+  const monsterCharacters = parseCharacterTemplates(rawMonsterCharacters)
+  if (!monsterCharacters) {
+    return null
   }
 
   return normalizeSnapshot({
     combatants,
     currentTurnId: typeof currentTurnId === 'string' ? currentTurnId : null,
     round: typeof round === 'number' && Number.isFinite(round) ? round : 1,
+    playerCharacters,
+    monsterCharacters,
   })
+}
+
+export const hasAdditionalCombatantInfo = (combatant: Combatant): boolean => {
+  if (combatant.notes.length > 0) {
+    return true
+  }
+
+  if (combatant.type !== 'monster') {
+    return false
+  }
+
+  return (
+    combatant.cr.length > 0 ||
+    combatant.xp != null ||
+    combatant.attackModifier != null ||
+    combatant.damageDice.length > 0
+  )
+}
+
+export const toTemplateOption = (template: CharacterTemplate) => ({
+  value: template.name,
+  label: `${template.name} (IM: ${template.initiativeModifier}, HP: ${template.hp}, AC: ${template.ac})`,
+})
+
+export const getCurrentTurnDetails = (currentTurn: Combatant): CurrentTurnDetail[] => {
+  const details: CurrentTurnDetail[] = [
+    {
+      key: 'initiative',
+      label: 'Initiative',
+      value: currentTurn.initiative,
+    },
+  ]
+
+  if (!shouldHidePlayerStats(currentTurn)) {
+    details.push(
+      {
+        key: 'hp',
+        label: 'HP',
+        value: currentTurn.hp,
+      },
+      {
+        key: 'ac',
+        label: 'AC',
+        value: currentTurn.ac,
+      },
+    )
+
+    if (currentTurn.attackModifier != null) {
+      details.push({
+        key: 'attackModifier',
+        label: 'Attack mod',
+        value: formatSignedModifier(currentTurn.attackModifier),
+      })
+    }
+
+    if (currentTurn.damageDice) {
+      details.push({
+        key: 'damageDice',
+        label: 'Damage',
+        value: currentTurn.damageDice,
+      })
+    }
+  }
+
+  return details
 }

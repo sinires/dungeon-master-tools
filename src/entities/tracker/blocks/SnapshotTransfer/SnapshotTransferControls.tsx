@@ -1,9 +1,9 @@
 import { type ChangeEvent, useRef } from 'react'
-import {Button, Flex, message} from 'antd'
-import styles from './SnapshotTransferControls.module.scss'
+import { Button, Flex, message } from 'antd'
+import styles from './styles.module.scss'
 import { useTrackerStore } from '@entities/tracker'
 import { downloadJson, readJsonFile } from '@shared/utils/json'
-import {ESpacer} from "@shared/constants/sizes.ts";
+import { ESpacer } from '@shared/constants/sizes.ts'
 
 export const SnapshotTransferControls = () => {
   const [messageApi, contextHolder] = message.useMessage()

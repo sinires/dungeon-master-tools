@@ -1,107 +1,131 @@
-import { useState } from 'react'
-import { Button, Flex, Input, InputNumber, Segmented, Typography } from 'antd'
-import styles from './AddCombatantForm.module.scss'
-import { type CombatantType, useTrackerStore } from '@entities/tracker'
+import { AutoComplete, Button, Flex, Form, InputNumber, Segmented } from 'antd'
+import type { CombatantType } from '@entities/tracker'
+import { useTrackerStore } from '@entities/tracker'
 
-const { Text } = Typography
-const MONSTER_DEFAULT_INIT_MOD = 0
-const MONSTER_DEFAULT_HP = 10
+import {
+  DEFAULT_COMBATANT_FORM_VALUES_BY_TYPE,
+  EMPTY_TEMPLATE_DETAILS,
+} from '@entities/tracker/constants'
+import styles from './styles.module.scss'
+import type { AddCombatantFormValues } from '@entities/tracker/types.ts'
+import { toTemplateOption } from '@entities/tracker/utils.ts'
 
 export const AddCombatantForm = () => {
   const addCombatant = useTrackerStore((state) => state.addCombatant)
+  const playerCharacters = useTrackerStore((state) => state.playerCharacters)
+  const monsterCharacters = useTrackerStore((state) => state.monsterCharacters)
+  const [form] = Form.useForm<AddCombatantFormValues>()
 
-  const [name, setName] = useState('')
-  const [initiativeModifier, setInitiativeModifier] = useState(0)
-  const [hp, setHp] = useState(0)
-  const [ac, setAc] = useState(10)
-  const [combatantType, setCombatantType] = useState<CombatantType>('player')
+  const combatantType = Form.useWatch('type', form) ?? 'player'
+  const nameValue = Form.useWatch('name', form) ?? ''
 
-  const handleAddCombatant = () => {
-    if (!name.trim()) {
-      return
-    }
+  const availableTemplates = combatantType === 'player' ? playerCharacters : monsterCharacters
 
-    addCombatant({
-      name,
-      initiativeModifier,
-      hp,
-      ac,
-      type: combatantType,
+  const resetForType = (type: CombatantType) => {
+    form.setFieldsValue({
+      name: '',
+      ...DEFAULT_COMBATANT_FORM_VALUES_BY_TYPE[type],
     })
   }
 
   const handleTypeChange = (nextType: CombatantType) => {
-    setCombatantType(nextType)
+    form.setFieldValue('type', nextType)
+    resetForType(nextType)
+  }
 
-    if (nextType === 'monster') {
-      setInitiativeModifier(MONSTER_DEFAULT_INIT_MOD)
-      setHp(MONSTER_DEFAULT_HP)
+  const handleNameSelect = (name: string) => {
+    const template = availableTemplates.find((item) => item.name === name)
+
+    if (!template) {
+      return
     }
+
+    form.setFieldsValue({
+      name: template.name,
+      initiativeModifier: template.initiativeModifier,
+      hp: template.hp,
+      ac: template.ac,
+    })
+  }
+
+  const handleAddCombatant = (values: AddCombatantFormValues) => {
+    if (!values.name) {
+      return
+    }
+
+    const matchedTemplate = availableTemplates.find((template) => template.name === values.name)
+    const templateDetails = matchedTemplate ?? EMPTY_TEMPLATE_DETAILS
+
+    addCombatant({
+      name: values.name,
+      initiativeModifier: Number(values.initiativeModifier ?? 0),
+      hp: Number(values.hp ?? 0),
+      ac: Number(values.ac ?? 0),
+      type: values.type,
+      notes: templateDetails.notes,
+      cr: templateDetails.cr,
+      xp: templateDetails.xp,
+      attackModifier: templateDetails.attackModifier,
+      damageDice: templateDetails.damageDice,
+    })
+
+    form.resetFields(['name'])
   }
 
   return (
-    <Flex wrap gap={12} align="end">
-      <div className={styles.field}>
-        <Text className={styles.label}>Name</Text>
-        <Input
-          value={name}
-          className={styles.nameInput}
-          placeholder="Goblin #1"
-          onChange={(event) => setName(event.target.value)}
-          onPressEnter={handleAddCombatant}
-        />
-      </div>
-      <div className={styles.field}>
-        <Text className={styles.label}>Initiative mod</Text>
-        <InputNumber
-          value={initiativeModifier}
-          step={1}
-          min={-10}
-          max={20}
-          className={styles.numberInput}
-          onChange={(nextValue) => setInitiativeModifier(Number(nextValue ?? 0))}
-        />
-      </div>
-      <div className={styles.field}>
-        <Text className={styles.label}>HP</Text>
-        <InputNumber
-          value={hp}
-          step={1}
-          min={0}
-          className={styles.numberInput}
-          onChange={(nextValue) => setHp(Number(nextValue ?? 0))}
-        />
-      </div>
-      <div className={styles.field}>
-        <Text className={styles.label}>AC</Text>
-        <InputNumber
-          value={ac}
-          step={1}
-          min={0}
-          max={99}
-          className={styles.numberInput}
-          onChange={(nextValue) => setAc(Number(nextValue ?? 0))}
-        />
-      </div>
-      <div className={styles.field}>
-        <Text className={styles.label}>Type</Text>
-        <Segmented<CombatantType>
-          value={combatantType}
-          options={[
-            { label: 'Player', value: 'player' },
-            { label: 'Monster', value: 'monster' },
-          ]}
-          onChange={handleTypeChange}
-        />
-      </div>
-      <Button
-        type="primary"
-        onClick={handleAddCombatant}
-        disabled={!name.trim()}
-        className={styles.addButton}
-      >
-        Add
-      </Button>
-    </Flex>
+    <Form<AddCombatantFormValues>
+      form={form}
+      layout="vertical"
+      className={styles.form}
+      onFinish={handleAddCombatant}
+      initialValues={{
+        type: 'player',
+        name: '',
+        ...DEFAULT_COMBATANT_FORM_VALUES_BY_TYPE.player,
+      }}
+    >
+      <Flex gap={12} wrap className={styles.row}>
+        <Form.Item label="Type" name="type" className={styles.fieldType}>
+          <Segmented<CombatantType>
+            options={[
+              { label: 'Player', value: 'player' },
+              { label: 'Monster', value: 'monster' },
+            ]}
+            onChange={handleTypeChange}
+          />
+        </Form.Item>
+        <Form.Item
+          label="Name"
+          name="name"
+          className={styles.fieldName}
+          rules={[{ required: true, whitespace: true }]}
+        >
+          <AutoComplete
+            placeholder="Select existing or type new"
+            options={availableTemplates.map(toTemplateOption)}
+            optionFilterProp="label"
+            showSearch
+            filterOption={(input, option) =>
+              (option?.label as string | undefined)
+                ?.toLocaleLowerCase()
+                .includes(input.toLocaleLowerCase()) ?? false
+            }
+            onSelect={handleNameSelect}
+          />
+        </Form.Item>
+        <Form.Item label="IM" name="initiativeModifier" className={styles.fieldNumber}>
+          <InputNumber step={1} min={-10} max={20} className={styles.numberInput} />
+        </Form.Item>
+        <Form.Item label="HP" name="hp" className={styles.fieldNumber}>
+          <InputNumber step={1} min={0} className={styles.numberInput} />
+        </Form.Item>
+        <Form.Item label="AC" name="ac" className={styles.fieldNumber}>
+          <InputNumber step={1} min={0} max={99} className={styles.numberInput} />
+        </Form.Item>
+        <Button type="primary" htmlType="submit" disabled={!nameValue.trim()}>
+          Add
+        </Button>
+      </Flex>
+    </Form>
   )
 }

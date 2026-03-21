@@ -7,12 +7,23 @@
 
 .content {
   padding: sizes.space(8) sizes.space(5);
-  max-width: 1400px;
+  max-width: 100vw;
+  width: 1400px;
   margin: auto;
+}
+
+.pageSwitcher {
+  margin-bottom: sizes.space(4);
+  display: flex;
+  justify-content: center;
 }
 
 @media (max-width: 768px) {
   .content {
     padding: sizes.space(5) sizes.space(4);
+  }
+
+  .pageSwitcher {
+    justify-content: flex-start;
   }
 }

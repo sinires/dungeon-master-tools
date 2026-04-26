@@ -65,8 +65,8 @@ export const AddCombatantForm = () => {
       notes: templateDetails.notes,
       cr: templateDetails.cr,
       xp: templateDetails.xp,
-      attackModifier: templateDetails.attackModifier,
-      damageDice: templateDetails.damageDice,
+      speeds: { ...templateDetails.speeds },
+      attacks: templateDetails?.attacks?.map((attack) => ({ ...attack })),
     })
 
     form.resetFields(['name'])
@@ -99,6 +99,7 @@ export const AddCombatantForm = () => {
           name="name"
           className={styles.fieldName}
           rules={[{ required: true, whitespace: true }]}
+          validateTrigger="onSubmit"
         >
           <AutoComplete
             placeholder="Select existing or type new"

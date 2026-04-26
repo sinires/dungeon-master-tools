@@ -5,3 +5,28 @@
 .currentTurnRow :global(td:first-child) {
   box-shadow: inset 3px 0 0 #faad14;
 }
+
+.multilineText {
+  white-space: pre-wrap;
+}
+
+.attackNameInput {
+  width: 140px;
+}
+
+.attackModifierInput {
+  width: 88px;
+}
+
+.attackTextInput {
+  width: 140px;
+}
+
+.attackSummary {
+  margin: 0;
+}
+
+.emptyAttacksText {
+  color: #64748b;
+  margin: 0;
+}

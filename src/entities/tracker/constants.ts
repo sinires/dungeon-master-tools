@@ -1,4 +1,4 @@
-import type { CombatantType } from '@entities/tracker/types.ts'
+import type { CombatantType, MovementSpeeds } from '@entities/tracker/types.ts'
 
 export const DEFAULT_HP = 1
 export const DEFAULT_AC = 10
@@ -6,7 +6,12 @@ export const DEFAULT_TEMPLATE_HP = 0
 export const DEFAULT_TEMPLATE_AC = 10
 export const DEFAULT_NOTES = ''
 export const DEFAULT_CR = ''
-export const DEFAULT_DAMAGE_DICE = ''
+export const DEFAULT_SPEEDS: MovementSpeeds = {
+  walk: 0,
+  fly: 0,
+  swim: 0,
+}
+export const DEFAULT_ATTACKS = []
 export const TRAILING_INDEX_PATTERN = /^(.*?)(?:\s+(\d+))?$/
 
 export const DEFAULT_COMBATANT_FORM_VALUES_BY_TYPE: Record<
@@ -33,6 +38,6 @@ export const EMPTY_TEMPLATE_DETAILS = {
   notes: '',
   cr: '',
   xp: null,
-  attackModifier: null,
-  damageDice: '',
+  speeds: DEFAULT_SPEEDS,
+  attacks: DEFAULT_ATTACKS,
 } as const

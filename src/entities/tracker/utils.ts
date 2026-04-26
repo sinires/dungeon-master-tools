@@ -1,16 +1,18 @@
 import type {
+  CharacterAttack,
   CharacterTemplate,
   Combatant,
   CombatantType,
   CurrentTurnDetail,
+  MovementSpeeds,
   TrackerSnapshot,
 } from './types'
 import {
   DEFAULT_AC,
   DEFAULT_CR,
-  DEFAULT_DAMAGE_DICE,
   DEFAULT_HP,
   DEFAULT_NOTES,
+  DEFAULT_SPEEDS,
   DEFAULT_TEMPLATE_AC,
   DEFAULT_TEMPLATE_HP,
   TRAILING_INDEX_PATTERN,
@@ -22,11 +24,53 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const toFiniteNumber = (value: unknown, fallback: number): number =>
   typeof value === 'number' && Number.isFinite(value) ? value : fallback
 
+const toFiniteNumberFromUnknown = (value: unknown, fallback: number): number => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number.parseFloat(value.replace(',', '.'))
+
+    return Number.isFinite(parsed) ? parsed : fallback
+  }
+
+  return fallback
+}
+
+const toNormalizedSpeed = (value: unknown): number =>
+  Math.max(0, Math.floor(toFiniteNumberFromUnknown(value, 0)))
+
 const toNullableFiniteNumber = (value: unknown): number | null =>
   typeof value === 'number' && Number.isFinite(value) ? value : null
 
 const toNormalizedText = (value: unknown, fallback = ''): string =>
   typeof value === 'string' ? value.trim() : fallback
+
+const toNormalizedSpeeds = (value: unknown): MovementSpeeds => {
+  if (isRecord(value)) {
+    return {
+      walk: toNormalizedSpeed(value.walk),
+      fly: toNormalizedSpeed(value.fly),
+      swim: toNormalizedSpeed(value.swim),
+    }
+  }
+
+  if (Array.isArray(value)) {
+    const [walk, fly, swim] = value
+
+    return {
+      walk: toNormalizedSpeed(walk),
+      fly: toNormalizedSpeed(fly),
+      swim: toNormalizedSpeed(swim),
+    }
+  }
+
+  return { ...DEFAULT_SPEEDS }
+}
+
+const hasSpeed = (speeds: MovementSpeeds): boolean =>
+  speeds.walk > 0 || speeds.fly > 0 || speeds.swim > 0
 
 const toNormalizedXp = (value: unknown): number | null => {
   const normalized = toNullableFiniteNumber(value)
@@ -38,6 +82,62 @@ const toNormalizedAttackModifier = (value: unknown): number | null => {
   const normalized = toNullableFiniteNumber(value)
 
   return normalized === null ? null : Math.trunc(normalized)
+}
+
+const toNormalizedAttacks = (
+  value: unknown,
+  legacyModifier?: unknown,
+  legacyDamageDice?: unknown,
+): CharacterAttack[] => {
+  const attacks: CharacterAttack[] = []
+
+  if (Array.isArray(value)) {
+    value.forEach((rawAttack, index) => {
+      if (!isRecord(rawAttack)) {
+        return
+      }
+
+      const name = toNormalizedText(rawAttack.name)
+      const attack = {
+        name,
+        modifier: toNormalizedAttackModifier(rawAttack.modifier),
+        damageType: toNormalizedText(rawAttack.damageType),
+        damageDice: toNormalizedText(rawAttack.damageDice),
+      }
+
+      if (
+        attack.name.length > 0 ||
+        attack.modifier !== null ||
+        attack.damageType.length > 0 ||
+        attack.damageDice.length > 0
+      ) {
+        attacks.push({
+          ...attack,
+          name: attack.name || `Attack ${index + 1}`,
+        })
+      }
+    })
+  }
+
+  if (attacks.length > 0) {
+    return attacks
+  }
+
+  const modifier = toNormalizedAttackModifier(legacyModifier)
+  const damageDice = toNormalizedText(legacyDamageDice)
+
+  if (modifier === null && damageDice.length === 0) {
+    return []
+  }
+
+  return [
+    {
+      name: 'Attack',
+      modifier,
+      damageType: '',
+      damageDice,
+    },
+  ]
 }
 
 export const isCombatantType = (value: unknown): value is CombatantType =>
@@ -143,8 +243,8 @@ const normalizeCharacterTemplate = (template: CharacterTemplate): CharacterTempl
   notes: toNormalizedText(template.notes, DEFAULT_NOTES),
   cr: toNormalizedText(template.cr, DEFAULT_CR),
   xp: toNormalizedXp(template.xp),
-  attackModifier: toNormalizedAttackModifier(template.attackModifier),
-  damageDice: toNormalizedText(template.damageDice, DEFAULT_DAMAGE_DICE),
+  speeds: toNormalizedSpeeds(template.speeds),
+  attacks: toNormalizedAttacks(template.attacks),
 })
 
 export const normalizeSnapshot = (snapshot: TrackerSnapshot): TrackerSnapshot => {
@@ -162,8 +262,8 @@ export const normalizeSnapshot = (snapshot: TrackerSnapshot): TrackerSnapshot =>
       notes: toNormalizedText(combatant.notes, DEFAULT_NOTES),
       cr: toNormalizedText(combatant.cr, DEFAULT_CR),
       xp: toNormalizedXp(combatant.xp),
-      attackModifier: toNormalizedAttackModifier(combatant.attackModifier),
-      damageDice: toNormalizedText(combatant.damageDice, DEFAULT_DAMAGE_DICE),
+      speeds: toNormalizedSpeeds(combatant.speeds),
+      attacks: toNormalizedAttacks(combatant.attacks),
     }))
     .filter((combatant) => combatant.name.length > 0)
 
@@ -252,6 +352,8 @@ export const parseImportedSnapshot = (payload: unknown): TrackerSnapshot | null 
       notes,
       cr,
       xp,
+      speeds,
+      attacks,
       attackModifier,
       damageDice,
     } = rawCombatant
@@ -273,8 +375,8 @@ export const parseImportedSnapshot = (payload: unknown): TrackerSnapshot | null 
       notes: toNormalizedText(notes, DEFAULT_NOTES),
       cr: toNormalizedText(cr, DEFAULT_CR),
       xp: toNormalizedXp(xp),
-      attackModifier: toNormalizedAttackModifier(attackModifier),
-      damageDice: toNormalizedText(damageDice, DEFAULT_DAMAGE_DICE),
+      speeds: toNormalizedSpeeds(speeds),
+      attacks: toNormalizedAttacks(attacks, attackModifier, damageDice),
     })
   }
 
@@ -294,8 +396,20 @@ export const parseImportedSnapshot = (payload: unknown): TrackerSnapshot | null 
         return null
       }
 
-      const { id, name, initiativeModifier, hp, ac, notes, cr, xp, attackModifier, damageDice } =
-        rawTemplate
+      const {
+        id,
+        name,
+        initiativeModifier,
+        hp,
+        ac,
+        notes,
+        cr,
+        xp,
+        speeds,
+        attacks,
+        attackModifier,
+        damageDice,
+      } = rawTemplate
 
       if (typeof id !== 'string' || typeof name !== 'string') {
         return null
@@ -310,8 +424,8 @@ export const parseImportedSnapshot = (payload: unknown): TrackerSnapshot | null 
         notes: toNormalizedText(notes, DEFAULT_NOTES),
         cr: toNormalizedText(cr, DEFAULT_CR),
         xp: toNormalizedXp(xp),
-        attackModifier: toNormalizedAttackModifier(attackModifier),
-        damageDice: toNormalizedText(damageDice, DEFAULT_DAMAGE_DICE),
+        speeds: toNormalizedSpeeds(speeds),
+        attacks: toNormalizedAttacks(attacks, attackModifier, damageDice),
       })
     }
 
@@ -349,8 +463,8 @@ export const hasAdditionalCombatantInfo = (combatant: Combatant): boolean => {
   return (
     combatant.cr.length > 0 ||
     combatant.xp != null ||
-    combatant.attackModifier != null ||
-    combatant.damageDice.length > 0
+    hasSpeed(combatant.speeds) ||
+    combatant.attacks.length > 0
   )
 }
 
@@ -382,21 +496,13 @@ export const getCurrentTurnDetails = (currentTurn: Combatant): CurrentTurnDetail
       },
     )
 
-    if (currentTurn.attackModifier != null) {
+    currentTurn.attacks.forEach((attack, index) => {
       details.push({
-        key: 'attackModifier',
-        label: 'Attack mod',
-        value: formatSignedModifier(currentTurn.attackModifier),
+        key: `attack-${index}`,
+        label: attack.name || `Attack ${index + 1}`,
+        value: attack.modifier == null ? '-' : formatSignedModifier(attack.modifier),
       })
-    }
-
-    if (currentTurn.damageDice) {
-      details.push({
-        key: 'damageDice',
-        label: 'Damage',
-        value: currentTurn.damageDice,
-      })
-    }
+    })
   }
 
   return details

@@ -7,7 +7,6 @@ import { APP_PAGE_OPTIONS } from './constants.ts'
 import styles from './styles.module.scss'
 import type { AppPage } from './types.ts'
 
-
 export const App = () => {
   const [activePage, setActivePage] = useState<AppPage>('initiative')
 

@@ -1,4 +1,9 @@
-import type { CharacterTemplate, CombatantType } from '@entities/tracker'
+import type {
+  CharacterAttack,
+  CharacterTemplate,
+  CombatantType,
+  MovementSpeeds,
+} from '@entities/tracker'
 import type { FormInstance } from 'antd'
 
 export interface CharacterTemplateFormValues {
@@ -9,8 +14,8 @@ export interface CharacterTemplateFormValues {
   notes: string
   cr: string
   xp: number | null
-  attackModifier: number | null
-  damageDice: string
+  speeds: MovementSpeeds
+  attacks: CharacterAttack[]
 }
 
 export type CharacterTemplateFormDefaults = Omit<CharacterTemplateFormValues, 'name'>

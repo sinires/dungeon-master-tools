@@ -109,7 +109,7 @@ export const CombatantsTable = () => {
       columns={columns}
       dataSource={combatants}
       expandable={{
-        rowExpandable: hasAdditionalCombatantInfo,
+        rowExpandable: (record) => record.type === 'monster' || hasAdditionalCombatantInfo(record),
         expandedRowRender: (record) => <CombatantExpandedInfo combatant={record} />,
       }}
       rowClassName={(record) => (record.id === currentTurnId ? styles.currentTurnRow : '')}

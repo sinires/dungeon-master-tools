@@ -1,11 +1,24 @@
 export type CombatantType = 'player' | 'monster'
 
+export interface MovementSpeeds {
+  walk: number
+  fly: number
+  swim: number
+}
+
+export interface CharacterAttack {
+  name: string
+  modifier: number | null
+  damageType: string
+  damageDice: string
+}
+
 export interface CharacterAdditionalInfo {
   notes: string
   cr: string
   xp: number | null
-  attackModifier: number | null
-  damageDice: string
+  speeds: MovementSpeeds
+  attacks: CharacterAttack[]
 }
 
 export interface Combatant extends CharacterAdditionalInfo {
@@ -88,7 +101,6 @@ export interface CurrentTurnDetail {
   value: string | number
 }
 
-
 export interface AddCombatantFormValues {
   type: Combatant['type']
   name: string
@@ -96,4 +108,3 @@ export interface AddCombatantFormValues {
   hp: number
   ac: number
 }
-

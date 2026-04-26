@@ -26,7 +26,21 @@ npm run lint:fix
 
 - Local state in browser (`localStorage`) via `zustand/persist`
 - Initiative list with current turn tracking
+- Player and monster templates for quick encounter setup
+- Monster templates with walk, fly, and swim speed fields
+- Multiple monster attacks with hit modifier, damage type, and damage dice
+- Expanded monster rows with editable attacks, hit rolls, and damage rolls
+- Multiline additional info display in expanded rows
 - JSON export/import without versioning
+
+## How to use
+
+1. Fill templates in the Players and Monsters tabs.
+2. For monster templates, set movement speed and add attacks with modifier, damage type, and damage dice formula.
+3. In Initiative, choose type and select a template or type a new name, then click Add.
+4. Expand a monster row to review and edit attacks. Use Roll hit for `1d20 + modifier`, and Roll damage for the damage dice formula.
+5. Use Next Turn or Tab to move through turns, and Reset battle to restart round order.
+6. Use Export/Import JSON to save or restore encounters locally.
 
 ## FSD structure
 

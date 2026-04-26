@@ -43,8 +43,8 @@ export const CharacterTemplatesPage = ({
       notes: defaults.notes,
       cr: defaults.cr,
       xp: defaults.xp,
-      attackModifier: defaults.attackModifier,
-      damageDice: defaults.damageDice,
+      speeds: defaults.speeds,
+      attacks: defaults.attacks,
     })
     setIsDrawerOpen(true)
   }
@@ -68,8 +68,8 @@ export const CharacterTemplatesPage = ({
       notes: values.notes ?? defaults.notes,
       cr: values.cr ?? defaults.cr,
       xp: values.xp ?? defaults.xp,
-      attackModifier: values.attackModifier ?? defaults.attackModifier,
-      damageDice: values.damageDice ?? defaults.damageDice,
+      speeds: values.speeds ?? defaults.speeds,
+      attacks: values.attacks ?? defaults.attacks,
     })
 
     closeCreateDrawer()

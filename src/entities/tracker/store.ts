@@ -20,11 +20,28 @@ const DEFAULT_TEMPLATE_HP = 0
 const DEFAULT_TEMPLATE_NOTES = ''
 const DEFAULT_TEMPLATE_CR = ''
 const DEFAULT_TEMPLATE_XP = null
-const DEFAULT_TEMPLATE_ATTACK_MODIFIER = null
-const DEFAULT_TEMPLATE_DAMAGE_DICE = ''
 
 const normalizeNullableNumber = (value: number | null): number | null =>
   value === null || !Number.isFinite(value) ? null : value
+
+const normalizeAttacks = (attacks: TrackerState['monsterCharacters'][number]['attacks']) =>
+  attacks
+    .map((attack) => ({
+      name: attack.name.trim(),
+      modifier:
+        attack.modifier === null || !Number.isFinite(attack.modifier)
+          ? null
+          : Math.trunc(attack.modifier),
+      damageType: attack.damageType.trim(),
+      damageDice: attack.damageDice.trim(),
+    }))
+    .filter(
+      (attack) =>
+        attack.name.length > 0 ||
+        attack.modifier !== null ||
+        attack.damageType.length > 0 ||
+        attack.damageDice.length > 0,
+    )
 
 const sortCharacterTemplates = (templates: CharacterTemplate[]) => {
   templates.sort((first, second) => first.name.localeCompare(second.name, 'en'))
@@ -48,7 +65,6 @@ export const useTrackerStore = create<TrackerState>()(
         set((state) => {
           const name = payload.name.trim()
           const normalizedXp = normalizeNullableNumber(payload.xp)
-          const normalizedAttackModifier = normalizeNullableNumber(payload.attackModifier)
 
           if (!name) {
             return
@@ -68,11 +84,12 @@ export const useTrackerStore = create<TrackerState>()(
             notes: payload.notes.trim() || DEFAULT_TEMPLATE_NOTES,
             cr: payload.cr.trim() || DEFAULT_TEMPLATE_CR,
             xp: normalizedXp === null ? DEFAULT_TEMPLATE_XP : Math.max(0, Math.floor(normalizedXp)),
-            attackModifier:
-              normalizedAttackModifier === null
-                ? DEFAULT_TEMPLATE_ATTACK_MODIFIER
-                : Math.trunc(normalizedAttackModifier),
-            damageDice: payload.damageDice.trim() || DEFAULT_TEMPLATE_DAMAGE_DICE,
+            speeds: {
+              walk: Math.max(0, Math.floor(payload.speeds.walk)),
+              fly: Math.max(0, Math.floor(payload.speeds.fly)),
+              swim: Math.max(0, Math.floor(payload.speeds.swim)),
+            },
+            attacks: normalizeAttacks(payload.attacks),
           })
 
           sortCombatants(state.combatants)
@@ -89,12 +106,7 @@ export const useTrackerStore = create<TrackerState>()(
           }
 
           if (patch.name !== undefined) {
-            const normalizedName = patch.name.trim()
-            if (!normalizedName) {
-              return
-            }
-
-            combatant.name = normalizedName
+            combatant.name = patch.name
           }
 
           if (patch.initiative !== undefined && Number.isFinite(patch.initiative)) {
@@ -115,6 +127,14 @@ export const useTrackerStore = create<TrackerState>()(
 
           if (patch.type !== undefined && isCombatantType(patch.type)) {
             combatant.type = patch.type
+          }
+
+          if (patch.speeds !== undefined) {
+            combatant.speeds = patch.speeds
+          }
+
+          if (patch.attacks !== undefined) {
+            combatant.attacks = patch.attacks
           }
 
           sortCombatants(state.combatants)
@@ -154,7 +174,6 @@ export const useTrackerStore = create<TrackerState>()(
         set((state) => {
           const name = payload.name.trim()
           const normalizedXp = normalizeNullableNumber(payload.xp)
-          const normalizedAttackModifier = normalizeNullableNumber(payload.attackModifier)
 
           if (!name) {
             return
@@ -179,11 +198,12 @@ export const useTrackerStore = create<TrackerState>()(
             notes: payload.notes.trim() || DEFAULT_TEMPLATE_NOTES,
             cr: payload.cr.trim() || DEFAULT_TEMPLATE_CR,
             xp: normalizedXp === null ? DEFAULT_TEMPLATE_XP : Math.max(0, Math.floor(normalizedXp)),
-            attackModifier:
-              normalizedAttackModifier === null
-                ? DEFAULT_TEMPLATE_ATTACK_MODIFIER
-                : Math.trunc(normalizedAttackModifier),
-            damageDice: payload.damageDice.trim() || DEFAULT_TEMPLATE_DAMAGE_DICE,
+            speeds: {
+              walk: Math.max(0, Math.floor(payload.speeds.walk)),
+              fly: Math.max(0, Math.floor(payload.speeds.fly)),
+              swim: Math.max(0, Math.floor(payload.speeds.swim)),
+            },
+            attacks: normalizeAttacks(payload.attacks),
           })
 
           sortCharacterTemplates(templates)
@@ -199,12 +219,7 @@ export const useTrackerStore = create<TrackerState>()(
           }
 
           if (patch.name !== undefined) {
-            const normalizedName = patch.name.trim()
-            if (!normalizedName) {
-              return
-            }
-
-            template.name = normalizedName
+            template.name = patch.name
           }
 
           if (patch.initiativeModifier !== undefined && Number.isFinite(patch.initiativeModifier)) {
@@ -232,14 +247,12 @@ export const useTrackerStore = create<TrackerState>()(
             template.xp = normalizedXp === null ? null : Math.max(0, Math.floor(normalizedXp))
           }
 
-          if (patch.attackModifier !== undefined) {
-            const normalizedAttackModifier = normalizeNullableNumber(patch.attackModifier)
-            template.attackModifier =
-              normalizedAttackModifier === null ? null : Math.trunc(normalizedAttackModifier)
+          if (patch.speeds !== undefined) {
+            template.speeds = patch.speeds
           }
 
-          if (patch.damageDice !== undefined) {
-            template.damageDice = patch.damageDice.trim()
+          if (patch.attacks !== undefined) {
+            template.attacks = patch.attacks
           }
 
           sortCharacterTemplates(templates)
@@ -397,6 +410,18 @@ export const useTrackerStore = create<TrackerState>()(
     {
       name: STORAGE_KEY,
       storage: createJSONStorage(() => localStorage),
+      merge: (persistedState, currentState) => {
+        const snapshot = parseImportedSnapshot(persistedState)
+
+        if (!snapshot) {
+          return currentState
+        }
+
+        return {
+          ...currentState,
+          ...snapshot,
+        }
+      },
       partialize: (state) => ({
         combatants: state.combatants,
         currentTurnId: state.currentTurnId,
